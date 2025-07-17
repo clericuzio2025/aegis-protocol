@@ -1,0 +1,158 @@
+<!-- Chosen Palette: Slate & Indigo -->
+<!-- Application Structure Plan: The application is designed as a single-purpose utility. The main view features a large, central button to control the 'recording' state, providing clear visual feedback (e.g., a pulsing ring). This focuses the user on the primary action. After stopping the recording, the app transitions its state to show a 'Debrief' view, replacing the button with the structured analysis. This task-oriented, two-state design (Recording -> Debrief) is the most intuitive flow for the user, guiding them from action to insight without clutter. -->
+<!-- Visualization & Content Choices: The core 'Kyros Debrief' is presented as structured text within HTML cards, which is the clearest way to deliver the qualitative analysis of a conversation. Key metrics (e.g., 'Question Ratio') are highlighted as prominent stats for scannability. Icons (Unicode) are used for visual cues (e.g., 🎙️, 📊). The primary interaction is the Start/Stop button, which uses JavaScript to toggle the application's state and trigger the generation of the debrief content. This direct manipulation makes the app feel responsive and purposeful. No charts are needed as the data is qualitative. No SVG/Mermaid is used. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kyros - Conversational Mirror</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #eef2ff; /* Indigo 50 */
+        }
+        .recording-pulse {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 1);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+        }
+        .debrief-section {
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <main id="app-container" class="w-full max-w-2xl text-center">
+        
+        <!-- Initial State: Recording Control -->
+        <div id="recorder-view" class="card">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Kyros</h1>
+            <p class="text-gray-600 mb-8">Your conversational mirror. Press Start to begin analyzing a conversation.</p>
+            <button id="record-btn" class="w-40 h-40 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-4xl mx-auto transition-transform transform hover:scale-105">
+                <span id="record-icon">🎙️</span>
+            </button>
+            <p id="status-text" class="mt-6 text-gray-500 font-medium">Ready to Analyze</p>
+        </div>
+
+        <!-- Debrief State: Analysis Display -->
+        <div id="debrief-view" class="card debrief-section" style="display: none;">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Kyros Debrief</h2>
+            <p class="text-gray-600 mb-8">Here is the hidden structure of your last conversation.</p>
+            
+            <div id="debrief-content" class="text-left space-y-6">
+                <!-- Debrief content will be injected here -->
+            </div>
+
+            <button id="reset-btn" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">Analyze Another Conversation</button>
+        </div>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const recorderView = document.getElementById('recorder-view');
+            const debriefView = document.getElementById('debrief-view');
+            const recordBtn = document.getElementById('record-btn');
+            const recordIcon = document.getElementById('record-icon');
+            const statusText = document.getElementById('status-text');
+            const debriefContent = document.getElementById('debrief-content');
+            const resetBtn = document.getElementById('reset-btn');
+
+            let isRecording = false;
+
+            // --- Mock Debrief Data ---
+            // In the real app, this would be generated by the Aether Engine
+            const debriefExamples = [
+                {
+                    title: "Business Negotiation",
+                    metrics: { "Statement Ratio": "90% You / 10% Them", "Vocal Stress Detected": "Yes (at 10:32)", "Key Term": "'Bottom Line' (used 8 times)" },
+                    analysis: "In the first 10 minutes, you used declarative statements 90% of the time. When the subject of price was raised, your vocal pitch showed a 15% increase in stress indicators, and you shifted to using questioning language. Your counterpart held a consistent, low-stress vocal tone throughout."
+                },
+                {
+                    title: "Couple's Argument",
+                    metrics: { "Accusation Ratio": "85%", "Past vs. Present Focus": "80% Past", "Key Term": "'Always' (used 14 times)" },
+                    analysis: "85% of sentences were framed as accusations ('You always...') rather than expressions of feeling ('I feel...'). The moments of highest emotional resonance (vocal stress, increased pace) occurred when discussing past events, not the current topic."
+                },
+                {
+                    title: "Team Brainstorm",
+                    metrics: { "Question vs. Statement": "70% Questions", "Idea Ownership": "Distributed (No dominant speaker)", "Key Term": "'What if' (used 22 times)" },
+                    analysis: "The conversation was highly generative, with questions outnumbering statements 7-to-3. No single individual dominated speaking time, and the phrase 'What if' was used frequently, indicating a collaborative and open exploration of ideas."
+                }
+            ];
+
+            function toggleRecording() {
+                isRecording = !isRecording;
+                if (isRecording) {
+                    // Start Recording
+                    recordBtn.classList.add('recording-pulse');
+                    recordIcon.textContent = '■';
+                    statusText.textContent = 'Analyzing... Press to Stop';
+                } else {
+                    // Stop Recording & Show Debrief
+                    recordBtn.classList.remove('recording-pulse');
+                    recordIcon.textContent = '🎙️';
+                    statusText.textContent = 'Ready to Analyze';
+                    showDebrief();
+                }
+            }
+
+            function showDebrief() {
+                const randomDebrief = debriefExamples[Math.floor(Math.random() * debriefExamples.length)];
+                
+                let metricsHtml = '';
+                for (const key in randomDebrief.metrics) {
+                    metricsHtml += `
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <dt class="text-gray-600">${key}</dt>
+                            <dd class="font-semibold text-gray-900">${randomDebrief.metrics[key]}</dd>
+                        </div>
+                    `;
+                }
+
+                debriefContent.innerHTML = `
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <h3 class="font-semibold text-lg text-gray-800">Key Metrics</h3>
+                        <dl class="mt-2 text-sm">${metricsHtml}</dl>
+                    </div>
+                    <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                        <h3 class="font-semibold text-lg text-indigo-800">Aether's Insight</h3>
+                        <p class="mt-2 text-indigo-700">${randomDebrief.analysis}</p>
+                    </div>
+                `;
+
+                recorderView.style.display = 'none';
+                debriefView.style.display = 'block';
+            }
+
+            function resetApp() {
+                debriefView.style.display = 'none';
+                recorderView.style.display = 'block';
+            }
+
+            recordBtn.addEventListener('click', toggleRecording);
+            resetBtn.addEventListener('click', resetApp);
+        });
+    </script>
+</body>
+</html>
