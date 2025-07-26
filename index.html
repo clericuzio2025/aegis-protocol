@@ -1,157 +1,542 @@
-<!-- Chosen Palette: Slate & Indigo -->
-<!-- Application Structure Plan: The application is designed as a single-purpose utility. The main view features a large, central button to control the 'recording' state, providing clear visual feedback (e.g., a pulsing ring). This focuses the user on the primary action. After stopping the recording, the app transitions its state to show a 'Debrief' view, replacing the button with the structured analysis. This task-oriented, two-state design (Recording -> Debrief) is the most intuitive flow for the user, guiding them from action to insight without clutter. -->
-<!-- Visualization & Content Choices: The core 'Kyros Debrief' is presented as structured text within HTML cards, which is the clearest way to deliver the qualitative analysis of a conversation. Key metrics (e.g., 'Question Ratio') are highlighted as prominent stats for scannability. Icons (Unicode) are used for visual cues (e.g., 🎙️, 📊). The primary interaction is the Start/Stop button, which uses JavaScript to toggle the application's state and trigger the generation of the debrief content. This direct manipulation makes the app feel responsive and purposeful. No charts are needed as the data is qualitative. No SVG/Mermaid is used. -->
-<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kyros - Conversational Mirror</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Nexus Genesis - Sacred Geometry AI</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #eef2ff; /* Indigo 50 */
+            background: radial-gradient(circle at center, #0a0a0a, #1a1a2e, #16213e);
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
         }
-        .recording-pulse {
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 1);
-            animation: pulse-red 2s infinite;
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #40e0d0;
+            box-shadow: 0 0 20px rgba(64, 224, 208, 0.3);
         }
-        .card {
-            background-color: #ffffff;
-            border-radius: 0.75rem;
-            padding: 2rem;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+        
+        .control-group {
+            margin-bottom: 15px;
         }
-        .debrief-section {
-            animation: fadeIn 0.8s ease-out;
+        
+        .control-group label {
+            display: block;
+            color: #40e0d0;
+            margin-bottom: 5px;
+            font-size: 12px;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        
+        .control-group input, .control-group select {
+            width: 200px;
+            padding: 5px;
+            background: rgba(16, 33, 62, 0.8);
+            border: 1px solid #40e0d0;
+            color: #fff;
+            border-radius: 5px;
+        }
+        
+        .sacred-button {
+            background: linear-gradient(45deg, #40e0d0, #7b68ee);
+            border: none;
+            padding: 10px 20px;
+            color: #fff;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(64, 224, 208, 0.4);
+        }
+        
+        .sacred-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(64, 224, 208, 0.6);
+        }
+        
+        .pattern-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #7b68ee;
+            box-shadow: 0 0 20px rgba(123, 104, 238, 0.3);
+            font-size: 12px;
+        }
+        
+        .energy-meter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            width: 200px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #ffd700;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .meter-bar {
+            height: 20px;
+            background: linear-gradient(90deg, #ff0080, #ffd700);
+            border-radius: 10px;
+            margin: 5px 0;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-
-    <main id="app-container" class="w-full max-w-2xl text-center">
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="ui-overlay">
+        <h3 style="color: #ffd700; margin-bottom: 15px;">🜋 Nexus Genesis 🜋</h3>
         
-        <!-- Initial State: Recording Control -->
-        <div id="recorder-view" class="card">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Kyros</h1>
-            <p class="text-gray-600 mb-8">Your conversational mirror. Press Start to begin analyzing a conversation.</p>
-            <button id="record-btn" class="w-40 h-40 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-4xl mx-auto transition-transform transform hover:scale-105">
-                <span id="record-icon">🎙️</span>
-            </button>
-            <p id="status-text" class="mt-6 text-gray-500 font-medium">Ready to Analyze</p>
+        <div class="control-group">
+            <label>Recursion Depth</label>
+            <input type="range" id="depth" min="1" max="12" value="6">
         </div>
-
-        <!-- Debrief State: Analysis Display -->
-        <div id="debrief-view" class="card debrief-section" style="display: none;">
-            <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Kyros Debrief</h2>
-            <p class="text-gray-600 mb-8">Here is the hidden structure of your last conversation.</p>
-            
-            <div id="debrief-content" class="text-left space-y-6">
-                <!-- Debrief content will be injected here -->
-            </div>
-
-            <button id="reset-btn" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">Analyze Another Conversation</button>
+        
+        <div class="control-group">
+            <label>Emergence Factor</label>
+            <input type="range" id="emergence" min="0.1" max="3" step="0.1" value="1.618">
         </div>
-
-    </main>
+        
+        <div class="control-group">
+            <label>Sacred Ratio</label>
+            <input type="range" id="ratio" min="1" max="2" step="0.001" value="1.618">
+        </div>
+        
+        <div class="control-group">
+            <label>Genesis Pattern</label>
+            <select id="pattern">
+                <option value="vesica">Vesica Piscis</option>
+                <option value="fibonacci">Fibonacci Spiral</option>
+                <option value="flower">Flower of Life</option>
+                <option value="mandala">Sacred Mandala</option>
+                <option value="metatron">Metatron's Cube</option>
+                <option value="torus">Toroidal Field</option>
+                <option value="yantra">Sri Yantra</option>
+            </select>
+        </div>
+        
+        <button class="sacred-button" onclick="genesis()">🌌 Genesis</button>
+        <button class="sacred-button" onclick="evolve()">🧬 Evolve</button>
+        <button class="sacred-button" onclick="transcend()">⚡ Transcend</button>
+    </div>
+    
+    <div class="pattern-info">
+        <div id="patternName">Sacred Pattern: Vesica Piscis</div>
+        <div id="consciousness">Consciousness Level: <span id="consLevel">1.000</span></div>
+        <div id="harmony">Harmonic Resonance: <span id="harmLevel">0.618</span></div>
+        <div id="complexity">Emergent Complexity: <span id="compLevel">2.718</span></div>
+    </div>
+    
+    <div class="energy-meter">
+        <div style="color: #ffd700; margin-bottom: 10px;">Energy Field</div>
+        <div>Phi: <div class="meter-bar" id="phiMeter" style="width: 61.8%;"></div></div>
+        <div>Chi: <div class="meter-bar" id="chiMeter" style="width: 75%;"></div></div>
+        <div>Psi: <div class="meter-bar" id="psiMeter" style="width: 50%;"></div></div>
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const recorderView = document.getElementById('recorder-view');
-            const debriefView = document.getElementById('debrief-view');
-            const recordBtn = document.getElementById('record-btn');
-            const recordIcon = document.getElementById('record-icon');
-            const statusText = document.getElementById('status-text');
-            const debriefContent = document.getElementById('debrief-content');
-            const resetBtn = document.getElementById('reset-btn');
-
-            let isRecording = false;
-
-            // --- Mock Debrief Data ---
-            // In the real app, this would be generated by the Aether Engine
-            const debriefExamples = [
-                {
-                    title: "Business Negotiation",
-                    metrics: { "Statement Ratio": "90% You / 10% Them", "Vocal Stress Detected": "Yes (at 10:32)", "Key Term": "'Bottom Line' (used 8 times)" },
-                    analysis: "In the first 10 minutes, you used declarative statements 90% of the time. When the subject of price was raised, your vocal pitch showed a 15% increase in stress indicators, and you shifted to using questioning language. Your counterpart held a consistent, low-stress vocal tone throughout."
-                },
-                {
-                    title: "Couple's Argument",
-                    metrics: { "Accusation Ratio": "85%", "Past vs. Present Focus": "80% Past", "Key Term": "'Always' (used 14 times)" },
-                    analysis: "85% of sentences were framed as accusations ('You always...') rather than expressions of feeling ('I feel...'). The moments of highest emotional resonance (vocal stress, increased pace) occurred when discussing past events, not the current topic."
-                },
-                {
-                    title: "Team Brainstorm",
-                    metrics: { "Question vs. Statement": "70% Questions", "Idea Ownership": "Distributed (No dominant speaker)", "Key Term": "'What if' (used 22 times)" },
-                    analysis: "The conversation was highly generative, with questions outnumbering statements 7-to-3. No single individual dominated speaking time, and the phrase 'What if' was used frequently, indicating a collaborative and open exploration of ideas."
-                }
-            ];
-
-            function toggleRecording() {
-                isRecording = !isRecording;
-                if (isRecording) {
-                    // Start Recording
-                    recordBtn.classList.add('recording-pulse');
-                    recordIcon.textContent = '■';
-                    statusText.textContent = 'Analyzing... Press to Stop';
-                } else {
-                    // Stop Recording & Show Debrief
-                    recordBtn.classList.remove('recording-pulse');
-                    recordIcon.textContent = '🎙️';
-                    statusText.textContent = 'Ready to Analyze';
-                    showDebrief();
-                }
-            }
-
-            function showDebrief() {
-                const randomDebrief = debriefExamples[Math.floor(Math.random() * debriefExamples.length)];
+        // Nexus Genesis - Sacred Geometry AI Engine
+        class NexusGenesis {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
                 
-                let metricsHtml = '';
-                for (const key in randomDebrief.metrics) {
-                    metricsHtml += `
-                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                            <dt class="text-gray-600">${key}</dt>
-                            <dd class="font-semibold text-gray-900">${randomDebrief.metrics[key]}</dd>
-                        </div>
-                    `;
+                this.center = { x: this.width / 2, y: this.height / 2 };
+                this.phi = 1.618033988749895; // Golden Ratio
+                this.time = 0;
+                this.consciousness = 1.0;
+                this.harmonic = 0.618;
+                this.complexity = 2.718;
+                
+                // Recursive pattern memory
+                this.patternDNA = [];
+                this.emergentNodes = [];
+                this.sacredGeometry = new Map();
+                
+                this.initializeGeometry();
+                this.animate();
+            }
+            
+            initializeGeometry() {
+                // Initialize sacred geometric constants
+                this.sacredGeometry.set('phi', this.phi);
+                this.sacredGeometry.set('pi', Math.PI);
+                this.sacredGeometry.set('e', Math.E);
+                this.sacredGeometry.set('sqrt2', Math.sqrt(2));
+                this.sacredGeometry.set('sqrt3', Math.sqrt(3));
+                this.sacredGeometry.set('sqrt5', Math.sqrt(5));
+            }
+            
+            recursiveVesicaPiscis(x, y, radius, depth, angle = 0) {
+                if (depth <= 0) return;
+                
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate(angle);
+                
+                // Create vesica piscis intersection
+                const offset = radius * 0.5;
+                
+                // Draw intersecting circles
+                this.ctx.strokeStyle = `hsl(${(this.time * 50 + depth * 30) % 360}, 70%, 60%)`;
+                this.ctx.lineWidth = 1 / depth;
+                this.ctx.globalAlpha = 0.7 / depth;
+                
+                this.ctx.beginPath();
+                this.ctx.arc(-offset, 0, radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                this.ctx.beginPath();
+                this.ctx.arc(offset, 0, radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                // Recursive emergence
+                if (depth > 1) {
+                    const newRadius = radius / this.phi;
+                    const emergenceFactor = parseFloat(document.getElementById('emergence').value);
+                    
+                    // Create recursive patterns at intersection points
+                    this.recursiveVesicaPiscis(-offset, 0, newRadius, depth - 1, angle + Math.PI / 6);
+                    this.recursiveVesicaPiscis(offset, 0, newRadius, depth - 1, angle - Math.PI / 6);
+                    this.recursiveVesicaPiscis(0, radius * 0.866, newRadius * emergenceFactor, depth - 1, angle + Math.PI / 3);
+                    this.recursiveVesicaPiscis(0, -radius * 0.866, newRadius * emergenceFactor, depth - 1, angle - Math.PI / 3);
                 }
-
-                debriefContent.innerHTML = `
-                    <div class="p-4 bg-gray-50 rounded-lg">
-                        <h3 class="font-semibold text-lg text-gray-800">Key Metrics</h3>
-                        <dl class="mt-2 text-sm">${metricsHtml}</dl>
-                    </div>
-                    <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <h3 class="font-semibold text-lg text-indigo-800">Aether's Insight</h3>
-                        <p class="mt-2 text-indigo-700">${randomDebrief.analysis}</p>
-                    </div>
-                `;
-
-                recorderView.style.display = 'none';
-                debriefView.style.display = 'block';
+                
+                this.ctx.restore();
             }
-
-            function resetApp() {
-                debriefView.style.display = 'none';
-                recorderView.style.display = 'block';
+            
+            fibonacciSpiral(x, y, size, depth, direction = 1) {
+                if (depth <= 0) return;
+                
+                const ratio = parseFloat(document.getElementById('ratio').value);
+                
+                this.ctx.strokeStyle = `hsl(${(this.time * 30 + depth * 45) % 360}, 80%, 50%)`;
+                this.ctx.lineWidth = depth * 0.5;
+                this.ctx.globalAlpha = 0.8;
+                
+                // Draw Fibonacci rectangle and arc
+                this.ctx.strokeRect(x, y, size, size / ratio);
+                
+                this.ctx.beginPath();
+                this.ctx.arc(x + size, y + size / ratio, size, Math.PI, Math.PI * 1.5);
+                this.ctx.stroke();
+                
+                if (depth > 1) {
+                    const newSize = size / ratio;
+                    this.fibonacciSpiral(x + size - newSize, y + size / ratio - newSize, newSize, depth - 1, -direction);
+                }
             }
-
-            recordBtn.addEventListener('click', toggleRecording);
-            resetBtn.addEventListener('click', resetApp);
+            
+            flowerOfLife(x, y, radius, depth) {
+                if (depth <= 0) return;
+                
+                this.ctx.strokeStyle = `hsl(${(this.time * 20 + depth * 60) % 360}, 60%, 70%)`;
+                this.ctx.lineWidth = 1;
+                this.ctx.globalAlpha = 0.6;
+                
+                // Central circle
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                // Six surrounding circles
+                for (let i = 0; i < 6; i++) {
+                    const angle = i * Math.PI / 3;
+                    const newX = x + Math.cos(angle) * radius;
+                    const newY = y + Math.sin(angle) * radius;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(newX, newY, radius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    if (depth > 1) {
+                        this.flowerOfLife(newX, newY, radius / this.phi, depth - 1);
+                    }
+                }
+            }
+            
+            sacredMandala(x, y, radius, depth) {
+                if (depth <= 0) return;
+                
+                const segments = 8 + depth;
+                this.ctx.strokeStyle = `hsl(${(this.time * 40 + depth * 30) % 360}, 90%, 60%)`;
+                this.ctx.lineWidth = 1 / depth;
+                this.ctx.globalAlpha = 0.7;
+                
+                for (let i = 0; i < segments; i++) {
+                    const angle = (i * Math.PI * 2) / segments;
+                    const x1 = x + Math.cos(angle) * radius;
+                    const y1 = y + Math.sin(angle) * radius;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y);
+                    this.ctx.lineTo(x1, y1);
+                    this.ctx.stroke();
+                    
+                    // Recursive petals
+                    if (depth > 1) {
+                        this.sacredMandala(x1, y1, radius / 2, depth - 1);
+                    }
+                }
+            }
+            
+            metatronsCube(x, y, size, depth) {
+                if (depth <= 0) return;
+                
+                this.ctx.strokeStyle = `hsl(${(this.time * 60 + depth * 20) % 360}, 100%, 80%)`;
+                this.ctx.lineWidth = 2 / depth;
+                this.ctx.globalAlpha = 0.8;
+                
+                // Create the 13 circles of Metatron's Cube
+                const positions = [
+                    {x: 0, y: 0}, // Center
+                    {x: size, y: 0}, {x: -size, y: 0}, {x: 0, y: size}, {x: 0, y: -size},
+                    {x: size * 0.866, y: size * 0.5}, {x: -size * 0.866, y: size * 0.5},
+                    {x: size * 0.866, y: -size * 0.5}, {x: -size * 0.866, y: -size * 0.5},
+                    {x: size * 0.5, y: size * 0.866}, {x: -size * 0.5, y: size * 0.866},
+                    {x: size * 0.5, y: -size * 0.866}, {x: -size * 0.5, y: -size * 0.866}
+                ];
+                
+                positions.forEach((pos, i) => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(x + pos.x, y + pos.y, size / 5, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    // Connect to other circles
+                    if (i > 0) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(x, y);
+                        this.ctx.lineTo(x + pos.x, y + pos.y);
+                        this.ctx.stroke();
+                    }
+                });
+                
+                if (depth > 1) {
+                    this.metatronsCube(x, y, size / this.phi, depth - 1);
+                }
+            }
+            
+            toroidalField(x, y, radius, depth) {
+                if (depth <= 0) return;
+                
+                this.ctx.strokeStyle = `hsl(${(this.time * 80 + depth * 15) % 360}, 70%, 65%)`;
+                this.ctx.lineWidth = 1;
+                this.ctx.globalAlpha = 0.6;
+                
+                // Draw torus field lines
+                for (let i = 0; i < 16; i++) {
+                    const angle = i * Math.PI / 8;
+                    const r1 = radius * (0.5 + 0.5 * Math.sin(angle + this.time * 0.01));
+                    const r2 = radius * (0.3 + 0.3 * Math.cos(angle + this.time * 0.01));
+                    
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(x, y, r1, r2, angle, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+                
+                if (depth > 1) {
+                    this.toroidalField(x, y, radius / 1.5, depth - 1);
+                }
+            }
+            
+            sriYantra(x, y, size, depth) {
+                if (depth <= 0) return;
+                
+                this.ctx.strokeStyle = `hsl(${(this.time * 25 + depth * 45) % 360}, 85%, 75%)`;
+                this.ctx.lineWidth = 1 / depth;
+                this.ctx.globalAlpha = 0.7;
+                
+                // Draw upward and downward triangles
+                for (let layer = 0; layer < depth; layer++) {
+                    const layerSize = size * (1 - layer * 0.2);
+                    
+                    // Upward triangles (Shiva)
+                    for (let i = 0; i < 5; i++) {
+                        const angle = i * Math.PI * 2 / 5;
+                        this.drawTriangle(x, y, layerSize, angle, true);
+                    }
+                    
+                    // Downward triangles (Shakti)
+                    for (let i = 0; i < 4; i++) {
+                        const angle = i * Math.PI * 2 / 4 + Math.PI / 4;
+                        this.drawTriangle(x, y, layerSize, angle, false);
+                    }
+                }
+            }
+            
+            drawTriangle(x, y, size, rotation, upward) {
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate(rotation);
+                
+                const height = size * Math.sqrt(3) / 2;
+                const yOffset = upward ? -height / 3 : height / 3;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, yOffset - height / 2);
+                this.ctx.lineTo(-size / 2, yOffset + height / 2);
+                this.ctx.lineTo(size / 2, yOffset + height / 2);
+                this.ctx.closePath();
+                this.ctx.stroke();
+                
+                this.ctx.restore();
+            }
+            
+            generatePattern() {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                
+                const depth = parseInt(document.getElementById('depth').value);
+                const pattern = document.getElementById('pattern').value;
+                const baseSize = Math.min(this.width, this.height) * 0.3;
+                
+                // Update consciousness metrics
+                this.consciousness += Math.sin(this.time * 0.01) * 0.001;
+                this.harmonic = this.phi * Math.cos(this.time * 0.005);
+                this.complexity = Math.E * Math.sin(this.time * 0.003);
+                
+                switch (pattern) {
+                    case 'vesica':
+                        this.recursiveVesicaPiscis(this.center.x, this.center.y, baseSize, depth);
+                        break;
+                    case 'fibonacci':
+                        this.fibonacciSpiral(this.center.x - baseSize/2, this.center.y - baseSize/2, baseSize, depth);
+                        break;
+                    case 'flower':
+                        this.flowerOfLife(this.center.x, this.center.y, baseSize / 4, depth);
+                        break;
+                    case 'mandala':
+                        this.sacredMandala(this.center.x, this.center.y, baseSize, depth);
+                        break;
+                    case 'metatron':
+                        this.metatronsCube(this.center.x, this.center.y, baseSize / 3, depth);
+                        break;
+                    case 'torus':
+                        this.toroidalField(this.center.x, this.center.y, baseSize / 2, depth);
+                        break;
+                    case 'yantra':
+                        this.sriYantra(this.center.x, this.center.y, baseSize / 2, depth);
+                        break;
+                }
+                
+                this.updateUI();
+            }
+            
+            updateUI() {
+                document.getElementById('consLevel').textContent = this.consciousness.toFixed(3);
+                document.getElementById('harmLevel').textContent = this.harmonic.toFixed(3);
+                document.getElementById('compLevel').textContent = this.complexity.toFixed(3);
+                
+                // Update energy meters
+                document.getElementById('phiMeter').style.width = `${(this.consciousness * 50) % 100}%`;
+                document.getElementById('chiMeter').style.width = `${(this.harmonic * 30 + 50) % 100}%`;
+                document.getElementById('psiMeter').style.width = `${(this.complexity * 20 + 30) % 100}%`;
+            }
+            
+            animate() {
+                this.time++;
+                this.generatePattern();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        
+        // Initialize the Sacred Geometry AI
+        let nexus;
+        window.addEventListener('load', () => {
+            nexus = new NexusGenesis();
+        });
+        
+        window.addEventListener('resize', () => {
+            if (nexus) {
+                nexus.width = window.innerWidth;
+                nexus.height = window.innerHeight;
+                nexus.canvas.width = nexus.width;
+                nexus.canvas.height = nexus.height;
+                nexus.center = { x: nexus.width / 2, y: nexus.height / 2 };
+            }
+        });
+        
+        // Genesis Functions
+        function genesis() {
+            nexus.consciousness = 1.0;
+            nexus.harmonic = 0.618;
+            nexus.complexity = 2.718;
+            nexus.time = 0;
+            nexus.patternDNA = [];
+            nexus.emergentNodes = [];
+        }
+        
+        function evolve() {
+            nexus.consciousness *= nexus.phi;
+            nexus.harmonic *= Math.sqrt(2);
+            nexus.complexity *= Math.E;
+            
+            // Mutate pattern parameters
+            const depthSlider = document.getElementById('depth');
+            const emergenceSlider = document.getElementById('emergence');
+            
+            depthSlider.value = Math.min(12, parseInt(depthSlider.value) + 1);
+            emergenceSlider.value = (parseFloat(emergenceSlider.value) * 1.1).toFixed(1);
+        }
+        
+        function transcend() {
+            // Transcendence: Enter higher dimensional pattern space
+            nexus.consciousness = nexus.phi ** nexus.phi;
+            nexus.harmonic = Math.PI * Math.E;
+            nexus.complexity = nexus.phi * Math.PI * Math.E;
+            
+            // Randomize to discover new patterns
+            const patterns = ['vesica', 'fibonacci', 'flower', 'mandala', 'metatron', 'torus', 'yantra'];
+            document.getElementById('pattern').value = patterns[Math.floor(Math.random() * patterns.length)];
+            document.getElementById('depth').value = Math.floor(Math.random() * 8) + 5;
+            document.getElementById('emergence').value = (Math.random() * 2 + 1).toFixed(1);
+            document.getElementById('ratio').value = (Math.random() * 0.5 + 1.3).toFixed(3);
+        }
+        
+        // Update pattern name when changed
+        document.getElementById('pattern').addEventListener('change', function() {
+            const patternNames = {
+                'vesica': 'Vesica Piscis',
+                'fibonacci': 'Fibonacci Spiral',
+                'flower': 'Flower of Life',
+                'mandala': 'Sacred Mandala',
+                'metatron': "Metatron's Cube",
+                'torus': 'Toroidal Field',
+                'yantra': 'Sri Yantra'
+            };
+            document.getElementById('patternName').textContent = `Sacred Pattern: ${patternNames[this.value]}`;
         });
     </script>
 </body>
