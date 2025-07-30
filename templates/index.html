@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battery Buyer Finder Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .controls h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn.secondary {
+            background: #6c757d;
+        }
+        
+        .btn.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .buyers-section {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .section-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .buyers-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .buyer-card {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s;
+        }
+        
+        .buyer-card:hover {
+            background: #f8f9fa;
+        }
+        
+        .buyer-card:last-child {
+            border-bottom: none;
+        }
+        
+        .buyer-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .buyer-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .buyer-detail {
+            display: flex;
+            align-items: center;
+        }
+        
+        .buyer-detail strong {
+            color: #333;
+            margin-right: 5px;
+            min-width: 60px;
+        }
+        
+        .confidence-score {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .confidence-high { background: #28a745; }
+        .confidence-medium { background: #ffc107; color: #333; }
+        .confidence-low { background: #dc3545; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .buyer-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔋 Battery Buyer Finder Agent</h1>
+            <p>Autonomous scrap battery buyer discovery without APIs</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalBuyers">-</div>
+                <div class="stat-label">Total Buyers Found</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="last24h">-</div>
+                <div class="stat-label">Last 24 Hours</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="lastHour">-</div>
+                <div class="stat-label">Last Hour</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <h3>Controls</h3>
+            <div class="button-group">
+                <button class="btn" onclick="loadAllBuyers()">View All Buyers</button>
+                <button class="btn" onclick="loadRecentBuyers(24)">Last 24 Hours</button>
+                <button class="btn" onclick="loadRecentBuyers(1)">Last Hour</button>
+                <button class="btn secondary" onclick="refreshStats()">Refresh Stats</button>
+            </div>
+        </div>
+        
+        <div class="buyers-section">
+            <div class="section-header">
+                <h3 id="sectionTitle">All Buyers</h3>
+            </div>
+            <div class="buyers-list" id="buyersList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading buyers...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status-indicator" id="statusIndicator">
+        Agent Active
+    </div>
+
+    <script>
+        let refreshInterval;
+        
+        function formatConfidenceScore(score) {
+            const percentage = Math.round(score * 100);
+            let className = 'confidence-low';
+            if (score >= 0.7) className = 'confidence-high';
+            else if (score >= 0.5) className = 'confidence-medium';
+            
+            return `<span class="confidence-score ${className}">${percentage}%</span>`;
+        }
+        
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+        
+        function renderBuyers(buyers, title = 'All Buyers') {
+            document.getElementById('sectionTitle').textContent = title;
+            const buyersList = document.getElementById('buyersList');
+            
+            if (buyers.length === 0) {
+                buyersList.innerHTML = '<div class="loading">No buyers found</div>';
+                return;
+            }
+            
+            const buyersHtml = buyers.map(buyer => `
+                <div class="buyer-card">
+                    <div class="buyer-name">${buyer.company_name}</div>
+                    <div class="buyer-details">
+                        ${buyer.phone ? `<div class="buyer-detail"><strong>Phone:</strong> ${buyer.phone}</div>` : ''}
+                        ${buyer.address ? `<div class="buyer-detail"><strong>Address:</strong> ${buyer.address}</div>` : ''}
+                        ${buyer.email ? `<div class="buyer-detail"><strong>Email:</strong> ${buyer.email}</div>` : ''}
+                        ${buyer.website ? `<div class="buyer-detail"><strong>Website:</strong> <a href="${buyer.website}" target="_blank">${buyer.website}</a></div>` : ''}
+                        <div class="buyer-detail"><strong>Type:</strong> ${buyer.business_type}</div>
+                        ${buyer.city ? `<div class="buyer-detail"><strong>City:</strong> ${buyer.city}</div>` : ''}
+                        <div class="buyer-detail"><strong>Score:</strong> ${formatConfidenceScore(buyer.confidence_score)}</div>
+                        <div class="buyer-detail"><strong>Found:</strong> ${formatDateTime(buyer.discovered_at)}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            buyersList.innerHTML = buyersHtml;
+        }
+        
+        function loadAllBuyers() {
+            document.getElementById('buyersList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading all buyers...</div>';
+            
+            fetch('/api/buyers')
+                .then(response => response.json())
+                .then(buyers => {
+                    renderBuyers(buyers, 'All Buyers');
+                })
+                .catch(error => {
+                    console.error('Error loading buyers:', error);
+                    document.getElementById('buyersList').innerHTML = '<div class="loading">Error loading buyers</div>';
+                });
+        }
+        
+        function loadRecentBuyers(hours) {
+            document.getElementById('buyersList').innerHTML = `<div class="loading"><div class="spinner"></div>Loading buyers from last ${hours} hours...</div>`;
+            
+            fetch(`/api/recent?hours=${hours}`)
+                .then(response => response.json())
+                .then(buyers => {
+                    renderBuyers(buyers, `Buyers Found in Last ${hours} Hours`);
+                })
+                .catch(error => {
+                    console.error('Error loading recent buyers:', error);
+                    document.getElementById('buyersList').innerHTML = '<div class="loading">Error loading buyers</div>';
+                });
+        }
+        
+        function refreshStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(stats => {
+                    document.getElementById('totalBuyers').textContent = stats.total_buyers;
+                    document.getElementById('last24h').textContent = stats.last_24_hours;
+                    document.getElementById('lastHour').textContent = stats.last_hour;
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                });
+        }
+        
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                refreshStats();
+                // Auto-refresh the current view if showing recent buyers
+                const currentTitle = document.getElementById('sectionTitle').textContent;
+                if (currentTitle.includes('Last 1 Hours')) {
+                    loadRecentBuyers(1);
+                } else if (currentTitle.includes('Last 24 Hours')) {
+                    loadRecentBuyers(24);
+                }
+            }, 60000); // Refresh every minute
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshStats();
+            loadAllBuyers();
+            startAutoRefresh();
+        });
+    </script>
+</body>
+</html>
